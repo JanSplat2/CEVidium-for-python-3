@@ -134,7 +134,9 @@ for imgmainidx, f in enumerate(imglist):
             # Adaptive. You'll need to construct the palette yourself then use it
             p = img.convert("P", palette=Image.ADAPTIVE, colors=15).palette.getdata()
             curpal = extern.paltolist(p, None)
-            palimg.putpalette(flatten(curpal))
+            safe_curpal = [c if c is not None else (0, 0, 0) for c in curpal]
+            palimg.putpalette(flatten(safe_curpal))
+
         else: 
             raise ValueError("Invalid subcode passed")
             
@@ -188,6 +190,7 @@ for imgmainidx, f in enumerate(imglist):
         raise ValueError("Illegal encoder value was passed.")
         
     # Palette processing for adaptive palette codecs
+    # Palette processing for adaptive palette codecs
     if len(settings.enco) > 3 and settings.enco[2] == 'A':
         palarr = []
         palidx = 0
@@ -207,21 +210,30 @@ for imgmainidx, f in enumerate(imglist):
                 palidx = 0x7FFF
                 palarr = curpal[1:16]
             else:
-                palarr = [0] + curpal[1:256]
+                palarr = [(i, curpal[i]) for i in range(1, 256)]
+        
         if settings.enco[3] == '4':
             palbin = struct.pack("<H", palidx)
             for i in palarr: 
-                palbin += extern.rgb24torgb555(i)
+                # Falls ein Eintrag None ist, nutzen wir stattdessen Schwarz (0,0,0)
+                safe_color = i if i is not None else (0, 0, 0)
+                palbin += extern.rgb24torgb555(safe_color)
         else:
             for i in palarr:
-                palbin += struct.pack("B", i[0]) + extern.rgb24torgb555(i[1])
+                # Sicherstellen, dass wir valide Tupel haben und keine None-Werte crashen
+                if isinstance(i, tuple) and len(i) == 2:
+                    idx = i[0]
+                    color = i[1] if i[1] is not None else (0, 0, 0)
+                    palbin += struct.pack("B", idx) + extern.rgb24torgb555(color)
+                else:
+                    palbin += struct.pack("B", 0) + extern.rgb24torgb555((0, 0, 0))
         imgdata += palbin
         prevpal = curpal
     else:
         imgdata += b"\x00\x00"
+
         
     # All processing completed. Buffer frame data for write
     fb.addframe(imgdata)
 fb.addframe(b"\x00\x00\x00") # End of Video packet
 fb.flushtofile()
-
