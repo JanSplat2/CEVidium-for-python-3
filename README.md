@@ -13,6 +13,11 @@ palette selection algorithm just isn't meant for video objects. Never was.
 That's the focus of the work going forward. Also, UI now wants more libraries,
 even though they don't use them yet. Reread the dependencies section if needed.
 
+(JanSplat2)Edit on September 12 2026; added python 3 support (is working quite good) +
+colors can be also displayed, even if there are pastel-ish or really light.
+Command was: python .\tools\toolkit2.py -i video.mp4 -e M1A4 -f -t "COLOUR" 
+(you need to start the main.py with the cmd in the path of the programm, if that helps)
+
 Motivation
 ----------
 I wanted to see Bad Apple play on my TI-84 CE.
