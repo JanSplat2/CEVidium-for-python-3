@@ -222,45 +222,44 @@ def gethsv(t): return colorsys.rgb_to_hsv(*(i/255.0 for i in t))
 def rgb24torgb555(rgbtuple):
     return struct.pack("<H", ((rgbtuple[0]>>3)<<10) + ((rgbtuple[1]>>3)<<5) + (rgbtuple[2]>>3))
 
-def paltolist(s, prvpal=None):
+def paltolist(s, transparent=None):
     o = []
-    for i in range(0, 15*3, 3):
-        # In Python 3, elements of bytes are already integers
-        if isinstance(s[i], int):
-            o.append((s[i+0] & ~0x7, s[i+1] & ~0x7, s[i+2] & ~0x7))
-        else:
-            o.append((ord(s[i+0]) & ~0x7, ord(s[i+1]) & ~0x7, ord(s[i+2]) & ~0x7))
-    o = list(OrderedDict.fromkeys(o[:16]))
-    if (0,0,0) not in o: o.insert(0, (0,0,0))
-    o.insert(0, o.pop(o.index((0,0,0))))
     
-    if prvpal:
-        oldvals = list(OrderedDict.fromkeys(prvpal[:16]))
-        newvals = o[:]
-        n = []
-        for i in oldvals:
-            if i in newvals: n.append(newvals.pop(newvals.index(i)))
-            else: n.append(None)
-        for i in newvals:
-            if None in n: n[n.index(None)] = i
-            else: n.append(i)
-        for i in range(len(n)):
-            if n[i] == None: n[i] = (0,0,0)
-        if n[0] != (0,0,0): raise ValueError("Well, shit.")
-        o = n
-        
-    if len(o) < 16:
-        o += [(0,0,0)] * (16 - len(o))
-        o = o * 16
-    elif len(o) < 64:
-        o += [(0,0,0)] * (64 - len(o))
-        o = o * 4
-    elif len(o) < 128:
-        o += [(0,0,0)] * (128 - len(o))
-        o = o * 2
+    # Falls s eine Liste von Tuples/Listen ist (z.B. [(r,g,b), (r,g,b)...])
+    if len(s) > 0 and isinstance(s[0], (tuple, list)):
+        for color in s:
+            r = color[0] if isinstance(color[0], int) else ord(color[0])
+            g = color[1] if isinstance(color[1], int) else ord(color[1])
+            b = color[2] if isinstance(color[2], int) else ord(color[2])
+            o.append((r & ~0x7, g & ~0x7, b & ~0x7))
     else:
-        o += [(0,0,0)] * (256 - len(o))
+        # Falls s eine flache Liste/Bytes/Strings ist (z.B. r,g,b,r,g,b...)
+        i = 0
+        while i < len(s):
+            try:
+                r = s[i+0] if isinstance(s[i+0], int) else ord(s[i+0])
+                g = s[i+1] if isinstance(s[i+1], int) else ord(s[i+1])
+                b = s[i+2] if isinstance(s[i+2], int) else ord(s[i+2])
+                o.append((r & ~0x7, g & ~0x7, b & ~0x7))
+                i += 3
+            except (IndexError, TypeError):
+                # Falls ein einzelnes Element selbst ein Tuple/String der Länge 3 ist
+                try:
+                    c = s[i]
+                    r = c[0] if isinstance(c[0], int) else ord(c[0])
+                    g = c[1] if isinstance(c[1], int) else ord(c[1])
+                    b = c[2] if isinstance(c[2], int) else ord(c[2])
+                    o.append((r & ~0x7, g & ~0x7, b & ~0x7))
+                except:
+                    o.append((0, 0, 0))
+                i += 1
+
+    while len(o) < 256: 
+        o.append(None)
+    if transparent is not None and transparent < len(o): 
+        o[transparent] = None
     return o
+
 
 def fedge(d, wa, ha, w):
     def scx(d, wa, ha, w):
