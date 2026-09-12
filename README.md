@@ -178,7 +178,7 @@ Known Issues
   is known to crash.
 * You really cannot use Python 3 for this. Everything is broken and I'm
   trying to fix it. By burning it all to the ground. And then burning the
-  ashes just to make sure.
+  ashes just to make sure. ITS FIXED with this version for now at least
 * The shiny new GUI encoder doesn't support adaptive encoding. That's on the
   TODO list.
 * The shiny new GUI encoder also sometimes mysteriously screws up. I ran into
